@@ -139,6 +139,8 @@ namespace WpfParserContur
                     TransformXml(_inputFilePath, employeesPath);
 
                     AddTotals(employeesPath);
+
+                    AddTotalsToInputFile(_inputFilePath);
                 });
 
                 
@@ -153,6 +155,32 @@ namespace WpfParserContur
             {
                 ConvertButton.IsEnabled = true;
             }
+        }
+
+        /// <summary>
+        /// Сохраняет в исходный файл total в корень по всем сотрудникам.
+        /// </summary>
+        /// <param name="inputFilePath"></param>
+        private void AddTotalsToInputFile(string inputFilePath)
+        {
+            var doc = XDocument.Load(inputFilePath);
+
+            
+
+            if (_payData != null 
+                || !_payData.Items.Any()) 
+            {
+                var total = _payData.Items.Sum(i => i.Amount);
+                if (doc.Root.Attribute("total") == null 
+                    || doc.Root.Attribute("total").ToString() != total.ToString())
+                {
+                    doc.Root.SetAttributeValue("total", total.ToString());
+                }
+            }
+
+            doc.Save(inputFilePath);
+
+            
         }
 
         /// <summary>
