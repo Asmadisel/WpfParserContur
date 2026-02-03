@@ -100,7 +100,12 @@ namespace WpfParserContur
                     _payData = LoadPayData(_inputFilePath);
                 });
 
-                StatusText.Text = "Данные загружены. Нажмите 'Преобразовать' для обработки.";
+                //Синхронно обновляем.
+                Dispatcher.Invoke(() =>
+                {
+                    DisplayDataInUI();
+                    StatusText.Text = "Данные загружены. Нажмите 'Преобразовать' для обработки.";
+                });
 
             }
             catch (Exception ex) 
@@ -109,6 +114,37 @@ namespace WpfParserContur
                                 MessageBoxButton.OK, MessageBoxImage.Error);
                 StatusText.Text = "Ошибка загрузки";
             }
+        }
+
+        /// <summary>
+        /// Отображает загруженные данные после парсинга.
+        /// </summary>
+        /// <exception cref="NotImplementedException"></exception>
+        private void DisplayDataInUI()
+        {
+            var employees = _payData.Items
+                .GroupBy(item => new { item.Name, item.Surname })
+                .Select(g => new
+                {
+                    Name = g.Key.Name,
+                    Surname = g.Key.Surname,
+                    Total = g.Sum(i => i.Amount)
+                })
+                .ToList();
+
+            EmployeesGrid.ItemsSource = employees;
+
+
+            var monthlySums = _payData.Items
+            .GroupBy(i => i.Mount)
+            .Select(g => new
+            {
+                Month = g.Key,
+                Total = g.Sum(i => i.Amount)
+            })
+            .ToList();
+
+            MonthlySumsGrid.ItemsSource = monthlySums;
         }
 
         /// <summary>
