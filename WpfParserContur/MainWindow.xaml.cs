@@ -1,7 +1,7 @@
 ﻿using Microsoft.Win32;
-using System.Windows.Forms;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -18,8 +19,8 @@ using System.Windows.Shapes;
 using System.Xml.Linq;
 using System.Xml.Xsl;
 using WpfParserContur.Models;
-using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using MessageBox = System.Windows.MessageBox;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
 
 namespace WpfParserContur
@@ -41,6 +42,7 @@ namespace WpfParserContur
         {
             InitializeComponent();
             ConvertButton.IsEnabled = false;
+            AddButton.IsEnabled = false;
         }
 
         /// <summary>
@@ -82,6 +84,9 @@ namespace WpfParserContur
                 StatusText.Text = "Файл загружен: " + System.IO.Path.GetFileName(_inputFilePath);
 
                 await LoadXmlDataAsync();
+
+                ConvertButton.IsEnabled = true;
+                AddButton.IsEnabled = true;
             }
         }
 
@@ -101,11 +106,7 @@ namespace WpfParserContur
                 });
 
                 //Синхронно обновляем.
-                Dispatcher.Invoke(() =>
-                {
-                    DisplayDataInUI();
-                    StatusText.Text = "Данные загружены. Нажмите 'Преобразовать' для обработки.";
-                });
+                UpdateTables();
 
             }
             catch (Exception ex) 
@@ -114,6 +115,15 @@ namespace WpfParserContur
                                 MessageBoxButton.OK, MessageBoxImage.Error);
                 StatusText.Text = "Ошибка загрузки";
             }
+        }
+
+        private void UpdateTables()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                DisplayDataInUI();
+                StatusText.Text = "Данные загружены. Нажмите 'Преобразовать' для обработки.";
+            });
         }
 
         /// <summary>
@@ -308,6 +318,60 @@ namespace WpfParserContur
             }
         }
 
+        /// <summary>
+        /// Обработчик кнопки доабвления новой записи в файл.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void AddItemButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (NameTextBox.Text != string.Empty 
+                && SurnameTextBox.Text != string.Empty
+                && AmountTextBox.Text != string.Empty
+                && MountTextBox.Text != string.Empty)
+            {
+                if (!decimal.TryParse(AmountTextBox.Text.Replace(',', '.'),
+                            NumberStyles.Any,
+                            CultureInfo.InvariantCulture,
+                            out _))
+                {
+                    MessageBox.Show("Некорректная сумма!");
+                    return;
+                }
 
+                await AddNewItemAsync();
+
+                _payData = LoadPayData(_inputFilePath);
+                //Синхронно обновляем.
+                UpdateTables();
+
+            }
+
+        }
+
+        /// <summary>
+        /// асинхронно добавляет новый элемент в файл.
+        /// </summary>
+        /// <returns></returns>
+        private async Task AddNewItemAsync()
+        {
+            try
+            {
+                var doc = XDocument.Load(_inputFilePath);
+
+                var newItem = new XElement("item",
+                   new XAttribute("name", NameTextBox.Text.Trim()),
+                   new XAttribute("surname", SurnameTextBox.Text.Trim()),
+                   new XAttribute("amount", AmountTextBox.Text.Trim()),
+                   new XAttribute("mount", MountTextBox.Text.Trim().ToLower()));
+
+                doc.Root.Add(newItem);
+                doc.Save(_inputFilePath);
+            }
+            catch (Exception ex) 
+            {
+                MessageBox.Show("Ошибка при добавлении:" + ex.Message);
+            }
+        }
     }
 }
