@@ -85,6 +85,10 @@ namespace WpfParserContur
             }
         }
 
+        /// <summary>
+        /// Загружает данные из исходного файла.
+        /// </summary>
+        /// <returns></returns>
         private async Task LoadXmlDataAsync()
         {
             try
@@ -107,6 +111,11 @@ namespace WpfParserContur
             }
         }
 
+        /// <summary>
+        /// Обработчик нажатия на кнопку "Преобразовать"
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void ConvertButton_Click(object sender, RoutedEventArgs e)
         {
             if (_outputFolderPath  == null) 
@@ -125,9 +134,11 @@ namespace WpfParserContur
                     string employeesPath = System.IO.Path.Combine(
                  _outputFolderPath,
                  $"Employees_{DateTime.Now:yyyyMMdd_HHmmss}.xml"
-             );
+                 );
 
                     TransformXml(_inputFilePath, employeesPath);
+
+                    AddTotals(employeesPath);
                 });
 
                 
@@ -144,6 +155,35 @@ namespace WpfParserContur
             }
         }
 
+        /// <summary>
+        /// Считает общую сумму по каждому сотруднику и записывает её в output-документ. 
+        /// </summary>
+        /// <param name="employeesPath"></param>
+        private void AddTotals(string employeesPath)
+        {
+            var doc = XDocument.Load(employeesPath);
+
+            foreach(var emp in doc.Root.Elements("Employee"))
+            {
+                decimal total = 0;
+
+                foreach(var item in emp.Elements("salary"))
+                {
+                    var amount = item.Attribute("amount")?.Value;
+                    total += ParseAmount(amount);
+                }
+
+                emp.SetAttributeValue("total", total.ToString());
+            }
+
+            doc.Save(employeesPath);
+        }
+
+        /// <summary>
+        /// Загружает коллекцию данных Pay из документа.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
         private Pay LoadPayData(string filePath)
         {
             var pay = new Pay();
@@ -163,13 +203,24 @@ namespace WpfParserContur
 
             return pay;
         }
+
+        /// <summary>
+        /// Парсит десятичные числа, независимо от локали (точка и запятая)
+        /// </summary>
+        /// <param name="amountStr"></param>
+        /// <returns></returns>
         private decimal ParseAmount(string amountStr)
         {
-            // Обработка разных десятичных разделителей
-            amountStr = amountStr.Replace(',', '.');
+            // Обработка разных десятичных разделителей. Приводим к русской локали (запятая)
+            amountStr = amountStr.Replace('.', ',');
             return decimal.TryParse(amountStr, out decimal result) ? result : 0;
         }
 
+        /// <summary>
+        /// Преобразует (создаёт новый) файл типа Employees.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="output"></param>
         private void TransformXml(string input, string output)
         {
             try
