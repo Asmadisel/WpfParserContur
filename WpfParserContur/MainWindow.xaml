@@ -1,0 +1,29 @@
+﻿<Window x:Class="WpfParserContur.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WpfParserContur"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="471" Width="800">
+    <Grid Margin="10">
+        <StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <Button Content="Загрузить" Width="100" Click="LoadButton_Click"/>
+                <Button Content="Преобразовать" Width="100" Margin="10,0,0,0" 
+                        Click="ConvertButton_Click" IsEnabled="False" x:Name="ConvertButton"/>
+            </StackPanel>
+
+            <TextBlock Text="Сотрудники:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <DataGrid x:Name="EmployeesGrid" Height="200" AutoGenerateColumns="True" 
+                      CanUserAddRows="False" Margin="0,0,0,10"/>
+
+            <TextBlock Text="Суммы по месяцам:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <DataGrid x:Name="MonthlySumsGrid" Height="126" AutoGenerateColumns="True" 
+                      CanUserAddRows="False"/>
+        </StackPanel>
+        <TextBlock x:Name="StatusText" Grid.Row="3" Text="Готов к работе" 
+                   VerticalAlignment="Bottom" HorizontalAlignment="Left" 
+                   Foreground="DarkGray"/>
+    </Grid>
+</Window>
