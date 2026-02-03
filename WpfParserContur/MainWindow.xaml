@@ -8,10 +8,22 @@
         Title="MainWindow" Height="471" Width="800">
     <Grid Margin="10">
         <StackPanel>
+            
             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                 <Button Content="Загрузить" Width="100" Click="LoadButton_Click"/>
                 <Button Content="Преобразовать" Width="100" Margin="10,0,0,0" 
                         Click="ConvertButton_Click" IsEnabled="False" x:Name="ConvertButton"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                <TextBlock Text="Папка для сохранения результатов:" FontWeight="Bold"/>
+                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                    <TextBox x:Name="OutputFolderTextBox" Width="300" IsReadOnly="True" 
+                         Text="{Binding OutputFolderPath, Mode=OneWay}" 
+                         VerticalContentAlignment="Center"/>
+                    <Button Content="Выбрать..." Width="100" Margin="10,0,0,0" 
+                        Click="SelectOutputFolder_Click"/>
+                </StackPanel>
             </StackPanel>
 
             <TextBlock Text="Сотрудники:" FontWeight="Bold" Margin="0,0,0,5"/>

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using System.Windows.Forms;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +16,10 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Xml.Linq;
+using System.Xml.Xsl;
 using WpfParserContur.Models;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
+using MessageBox = System.Windows.MessageBox;
 
 
 namespace WpfParserContur
@@ -26,15 +30,42 @@ namespace WpfParserContur
     public partial class MainWindow : Window
     {
         private string _inputFilePath;
+        private string _outputFolderPath;
         private Pay _payData;
         private List<Employee> _employees;
 
+        /// <summary>
+        /// Инициализация основного окна.
+        /// </summary>
         public MainWindow()
         {
             InitializeComponent();
             ConvertButton.IsEnabled = false;
         }
 
+        /// <summary>
+        /// Выбор папки для сохранения результатов
+        /// </summary>
+        private void SelectOutputFolder_Click(object sender, RoutedEventArgs e)
+        {
+            using (var dialog = new FolderBrowserDialog())
+            {
+                dialog.Description = "Выберите папку для сохранения преобразования";
+                dialog.SelectedPath = _outputFolderPath;
+
+                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    _outputFolderPath = dialog.SelectedPath;
+                    OutputFolderTextBox.Text = _outputFolderPath;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Обработчик загрузки файла.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void LoadButton_Click(object sender, RoutedEventArgs e)
         {
             var openFileDialog = new OpenFileDialog
@@ -50,24 +81,68 @@ namespace WpfParserContur
                 ConvertButton.IsEnabled = true;
                 StatusText.Text = "Файл загружен: " + System.IO.Path.GetFileName(_inputFilePath);
 
-                // Асинхронная загрузка данных
                 await LoadXmlDataAsync();
             }
         }
 
         private async Task LoadXmlDataAsync()
         {
-            StatusText.Text = "Загрузка данных...";
-
-            await Task.Run(() =>
+            try
             {
-                _payData = LoadPayData(_inputFilePath);
-            });
+                StatusText.Text = "Загрузка данных...";
 
-            StatusText.Text = "Данные загружены. Нажмите 'Преобразовать' для обработки.";
+                await Task.Run(() =>
+                {
+                    _payData = LoadPayData(_inputFilePath);
+                });
+
+                StatusText.Text = "Данные загружены. Нажмите 'Преобразовать' для обработки.";
+
+            }
+            catch (Exception ex) 
+            {
+                MessageBox.Show($"Ошибка загрузки: {ex.Message}", "Ошибка",
+                                MessageBoxButton.OK, MessageBoxImage.Error);
+                StatusText.Text = "Ошибка загрузки";
+            }
         }
 
-        private async void ConvertButton_Click(object sender, RoutedEventArgs e) { }
+        private async void ConvertButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_outputFolderPath  == null) 
+            {
+                MessageBox.Show("пожалуйста, выберите директорию для сохранения файла");
+                return;
+            }
+
+            try
+            {
+                ConvertButton.IsEnabled = false;
+                StatusText.Text = "Запускаем преобразование";
+
+                await Task.Run(() =>
+                {
+                    string employeesPath = System.IO.Path.Combine(
+                 _outputFolderPath,
+                 $"Employees_{DateTime.Now:yyyyMMdd_HHmmss}.xml"
+             );
+
+                    TransformXml(_inputFilePath, employeesPath);
+                });
+
+                
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка преобразования: {ex.Message}", "Ошибка",
+                                MessageBoxButton.OK, MessageBoxImage.Error);
+                StatusText.Text = "Ошибка преобразования";
+            }
+            finally
+            {
+                ConvertButton.IsEnabled = true;
+            }
+        }
 
         private Pay LoadPayData(string filePath)
         {
@@ -93,6 +168,29 @@ namespace WpfParserContur
             // Обработка разных десятичных разделителей
             amountStr = amountStr.Replace(',', '.');
             return decimal.TryParse(amountStr, out decimal result) ? result : 0;
+        }
+
+        private void TransformXml(string input, string output)
+        {
+            try
+            {
+                string xsltPath = System.IO.Path.Combine(
+                    AppContext.BaseDirectory,
+                    "TransformScaffolds",
+                    "transformEmployee.xslt"
+                );
+
+                var transform = new XslCompiledTransform();
+                transform.Load(xsltPath);
+                transform.Transform(input, output);
+
+                MessageBox.Show("Файл успешно преобразован");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка XSLT-преобразования: {ex.Message}");
+                StatusText.Text = "Ошибка поиска файла преобразования";
+            }
         }
 
 
